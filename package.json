@@ -8,14 +8,5 @@
         "compose:up": "docker compose up -d",
         "compose:down": "docker compose down",
         "compose:logs": "docker compose logs -f"
-<<<<<<< HEAD
     }
 }
-=======
-    },
-    "dependencies": {
-        "sequelize": "^6.37.8",
-        "sequelize-cli": "^6.6.5"
-    }
-}
->>>>>>> 371c1da40b7f2550f7207205d00dd77f58482301

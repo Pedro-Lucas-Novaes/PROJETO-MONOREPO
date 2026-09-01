@@ -9,11 +9,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-<<<<<<< HEAD
       - pgdata:/var/lib/postgressql/data
-=======
-      - pgdata:/var/lib/postgresql/data
->>>>>>> 371c1da40b7f2550f7207205d00dd77f58482301
 
   api:
     build:
@@ -31,8 +27,15 @@ services:
       - DB_PASSWORD=postgres
       - DB_DIALECT=postgres
       - DB_SSL=false
+      - NODE_ENV=development
+      - CI=true
     depends_on:
       - db
+    volumes:
+      - ./backend:/app
+      - backend_node_modules:/app/node_modules
+    command: pnpm dev
 
 volumes:
   pgdata:
+  backend_node_modules:

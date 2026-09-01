@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import bcrypt from 'bcryptjs';
 import  { User } from '../models/User';
 
 
@@ -19,9 +20,8 @@ export class UserController {
     public static async show(req: Request, res: Response) : Promise<Response>{
         try {
             const id = parseInt(req.params.id as string, 10);
-
-            if(isNaN(id) || id <= 0) {
-                return res.status(400).json({ erro: 'O ID informado deve ser um numero'})
+            if (isNaN(id) || id <= 0) {
+                return res.status(400).json({ erro: 'O ID informado deve ser um numero valido.' });
             }
 
             const user = await User.findByPk(id, {
@@ -41,30 +41,31 @@ export class UserController {
     // POST /api/users - Cadastrar um novo usuário
     public static async create(req: Request, res: Response) : Promise<Response>{
         try {
-            const { nome, email, senha_hash } = req.body;
+            const { nome, email, password } = req.body;
 
             if (!nome || typeof nome !== 'string' || nome.trim() === '') {
-                return res.status(400).json({erro: 'O campo nome é obrigatório'})
+                return res.status(400).json({erro: 'O campo nome é obrigatório.'});
             }
 
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if(!email || !emailRegex.test(email.trim())){
-                return res.status(400).json({erro: 'Informe um e-mail valido.'})
+            if (!email || !emailRegex.test(email.trim())) {
+                return res.status(400).json({erro: 'Informe um e-mail valido.'});
             }
 
-            if (!senha_hash || typeof senha_hash !== 'string' || senha_hash.length < 6) {
-                return res.status(400).json({erro: 'A senha deve conter no minimo 6 caracteres'})
+            if (!password || typeof password !== 'string' || password.length < 6) {
+                return res.status(400).json({erro: 'A senha deve conter no minimo 6 caracteres.'});
             }
 
-            const userExistente = await User.findOne({ where: { email: email.trim()}})
-
+            const userExistente = await User.findOne({ where: { email: email.trim() }});
             if (userExistente) {
-                return res.status(400).json({erro: 'Já existe um usuario cadastrado com este e-mail'})
+                return res.status(400).json({erro: 'Já existe um usuário cadastrado com este e-mail.'});
             }
+
+            const senha_hash = await bcrypt.hash(password, 10);
 
             const novoUser = await User.create({
-                nome: nome.trim(),
-                email: email.trim().toLowerCase(),
+                nome: nome.trim(), 
+                email: email.trim().toLowerCase(), 
                 senha_hash
             });
 
@@ -83,11 +84,9 @@ export class UserController {
     public static async update(req: Request, res: Response) : Promise<Response>{
         try {
             const id = parseInt(req.params.id as string, 10);
-
-            if(isNaN(id) || id <= 0) {
-                return res.status(400).json({ erro: 'O ID informado deve ser um numero valido.'})
+            if (isNaN(id) || id <= 0) {
+                return res.status(400).json({ erro: 'O ID informado deve ser um numero valido.' });
             }
-
             const { nome, email } = req.body;
 
             const user = await User.findByPk(id);
@@ -97,8 +96,8 @@ export class UserController {
             }
 
             if (nome !== undefined) {
-                if (typeof nome !== 'string' || nome.trim() === '') {
-                    return res.status(404).json({erro: 'O campo nome deve ser um texto valido.'})
+                if (typeof nome !== 'string' || nome.trim() === ''){
+                    return res.status(404).json({erro: 'O campo nome deve ser um texto valido.'});
                 }
 
                 user.nome = nome.trim();
@@ -106,18 +105,17 @@ export class UserController {
 
             if (email != undefined) {
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                if(!email || !emailRegex.test(email.trim())){
-                    return res.status(400).json({erro: 'Informe um e-mail valido.'})
+                if (!emailRegex.test(email.trim())) {
+                    return res.status(400).json({erro: 'Informe um e-mail valido.'});
+                }
+
+                const emailEmUso = await User.findOne({where: {email: email.trim().toLowerCase()}});
+                if (emailEmUso && emailEmUso.id !== id) {
+                    return res.status(400).json({erro: 'Este e-mail já está em uso.'});
+                }
+
+                user.email = email.trim().toLowerCase();
             }
-
-            const emailEmUso = await User.findOne({where: {email: email.trim().toLowerCase()}});
-            if (emailEmUso && emailEmUso.id !== id) {
-                return res.status(400).json({erro: 'Este e-mail já está em uso'})
-            }
-
-            user.email = email.trim().toLowerCase();
-        }
-
 
             await user.save();
 
@@ -136,9 +134,8 @@ export class UserController {
     public static async delete(req: Request, res: Response) : Promise<Response>{
         try {
             const id = parseInt(req.params.id as string, 10);
-
-            if(isNaN(id) || id <= 0) {
-                return res.status(400).json({ erro: 'O ID informado deve ser um numero valido.'})
+            if (isNaN(id) || id <= 0) {
+                return res.status(400).json({ erro: 'O ID informado deve ser um numero valido.' });
             }
 
             const user = await User.findByPk(id);

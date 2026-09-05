@@ -24,6 +24,8 @@ export class AuthController {
         return res.status(401).json({ erro: 'Credenciais inválidas.' });
       }
 
+      const valorIncorreto: number = 'texto incorreto';
+
       // validando a senha comparando o texto puro com o hash
       const senhaValida = await bcrypt.compare(password, user.senha_hash);
       if (!senhaValida) {

@@ -1,28 +1,30 @@
 {
-    "name": "projeto-monorepo-iec",
-    "version": "1.0.0",
-    "private": true,
-    "scripts": {
-        "docker:build-api": "docker build -t api-service ./backend",
-        "docker:build-app": "docker build -t app-service ./app",
-        "compose:up": "docker compose up -d",
-        "compose:down": "docker compose down",
-        "compose:logs": "docker compose logs -f"
-    },
-    "dependencies": {
-        "express": "^5.2.1",
-        "modules": "^0.4.0",
-        "node": "^26.8.1",
-        "pg": "^8.23.0",
-        "pg-hstore": "^2.3.4",
-        "sequelize": "^6.37.8"
-    },
-    "devDependencies": {
-        "@types/cors": "^2.8.19",
-        "@types/express": "^5.0.6",
-        "@types/node": "^26.4.0",
-        "sequelize-cli": "^6.6.5",
-        "tsx": "^4.23.13",
-        "typescript": "^7.0.2"
-    }
+  "name": "projeto-monorepo-iec",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "docker:build-api": "docker build -t api-service ./backend",
+    "docker:build-app": "docker build -t app-service ./app",
+    "compose:up": "docker compose up -d",
+    "compose:down": "docker compose down",
+    "compose:logs": "docker compose logs -f",
+    "prepare": "husky"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "modules": "^0.4.0",
+    "node": "^26.8.1",
+    "pg": "^8.23.0",
+    "pg-hstore": "^2.3.4",
+    "sequelize": "^6.37.8"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.4.0",
+    "husky": "^9.1.7",
+    "sequelize-cli": "^6.6.5",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2"
+  }
 }

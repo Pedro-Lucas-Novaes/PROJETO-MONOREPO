@@ -16,7 +16,7 @@ export class AuthController {
           .json({ erro: 'Email e senha são obrigatórios.' });
       }
 
-      const naoSei: number = 'kkkk';
+      const naosei: number = 'hhhh';
 
       // Busca usuario no banco local
       const user = await User.findOne({

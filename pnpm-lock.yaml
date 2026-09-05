@@ -14,9 +14,6 @@ importers:
       modules:
         specifier: ^0.4.0
         version: 0.4.0
-      node:
-        specifier: ^26.8.1
-        version: 26.8.1
       pg:
         specifier: ^8.23.0
         version: 8.23.0
@@ -712,14 +709,6 @@ packages:
   negotiator@1.1.0:
     resolution: {integrity: sha512-NMPBRMJgiQHjbd8phG3Vebdx4kZ1H121rbl5IkMqeOsahptB9BKo/d7oJ3zTXqTgagn2bWlNSXkh0QUGM31RYg==}
     engines: {node: '>=18'}
-
-  node-bin-setup@1.1.4:
-    resolution: {integrity: sha512-vWNHOne0ZUavArqPP5LJta50+S8R261Fr5SvGul37HbEDcowvLjwdvd0ZeSr0r2lTSrPxl6okq9QUw8BFGiAxA==}
-
-  node@26.8.1:
-    resolution: {integrity: sha512-nmHy6P+rwsyfiijgUmrTn6QAGCWe0YBFNDD0WdYqw64MHDzaN5MV+iW4vMV1OaUQZKpbK9OIW8mt26HkA90pMw==}
-    engines: {npm: '>=5.0.0'}
-    hasBin: true
 
   nopt@7.2.1:
     resolution: {integrity: sha512-taM24ViiimT/XntxbPyJQzCG+p4EKOpgD3mxFwW38mGjVUrfERQOeY4EDHjdnptttfHuHQXFx+lTP08Q+mLa/w==}
@@ -1616,12 +1605,6 @@ snapshots:
   negotiator@1.1.0:
     dependencies:
       content-type: 2.1.0
-
-  node-bin-setup@1.1.4: {}
-
-  node@26.8.1:
-    dependencies:
-      node-bin-setup: 1.1.4
 
   nopt@7.2.1:
     dependencies:

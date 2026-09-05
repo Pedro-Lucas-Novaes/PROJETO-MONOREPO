@@ -16,6 +16,8 @@ export class AuthController {
           .json({ erro: 'Email e senha são obrigatórios.' });
       }
 
+      const naoSei: number = 'kkkk';
+
       // Busca usuario no banco local
       const user = await User.findOne({
         where: { email: email.trim().toLowerCase() },
@@ -23,8 +25,6 @@ export class AuthController {
       if (!user || !user.senha_hash) {
         return res.status(401).json({ erro: 'Credenciais inválidas.' });
       }
-
-      const valorIncorreto: number = 'texto incorreto';
 
       // validando a senha comparando o texto puro com o hash
       const senhaValida = await bcrypt.compare(password, user.senha_hash);

@@ -11,25 +11,21 @@ export class AuthController {
       const { email, password } = req.body;
 
       if (!email || !password) {
-        return res
-          .status(400)
-          .json({ erro: 'Email e senha são obrigatórios.' });
+        return res.status(400).json({ erro: 'Email e senha são obrigatórios' });
       }
-
-      const naosei: number = 'hhhh';
 
       // Busca usuario no banco local
       const user = await User.findOne({
         where: { email: email.trim().toLowerCase() },
       });
       if (!user || !user.senha_hash) {
-        return res.status(401).json({ erro: 'Credenciais inválidas.' });
+        return res.status(401).json({ erro: 'Credenciais invalidas.' });
       }
 
-      // validando a senha comparando o texto puro com o hash
+      // Valida a senha comparando o texto puro com o hash
       const senhaValida = await bcrypt.compare(password, user.senha_hash);
       if (!senhaValida) {
-        return res.status(401).json({ erro: 'Credenciais inválidas.' });
+        return res.status(401).json({ erro: 'Credenciais invalidas.' });
       }
 
       // Gera o token JWT com validade de 1 hora
@@ -39,9 +35,10 @@ export class AuthController {
         { expiresIn: '1h' },
       );
 
-      return res
-        .status(200)
-        .json({ mensagem: 'Login realizado com sucesso.', token });
+      return res.status(200).json({
+        mensagem: 'Login realizado com sucesso!',
+        token,
+      });
     } catch (error: any) {
       return res.status(500).json({ erro: error.message });
     }

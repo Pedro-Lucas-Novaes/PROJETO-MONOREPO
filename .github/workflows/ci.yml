@@ -5,11 +5,11 @@ on:
   push:
     branches:
       - main
-  # Dispara automaticamente ao abrir um pull request para a branch main
+  # Dispara na abertura ou atualização de Pull Request direcionados para a branch main
   pull_request:
     branches:
       - main
-  # Permite execução manuel pelo painel web do GitHub (aba actions -> Run workflow)
+  # Permite execução manual pelo painel web do Github ( aba Actions -> Run workflow)
   workflow_dispatch:
 
 jobs:
@@ -51,29 +51,29 @@ jobs:
           cd backend
           pnpm run type-check
 
-      - name: 8. Validar Tipos e Compilar o Backend (Express)
+      - name: 8. Validar Tipos e Compliar o Backend (Express)
         run: |
           cd backend
           pnpm run build
 
-      - name: 9. Validar Construção da Imagem Docker da API
+      - name: 9. Validar Contrução da Imagem Docker da API
         run: |
           docker build -t api-service:test ./backend
 
       - name: 10. Validar Frontend (quando presente no monorepo)
         run: |
           if [ -d "app"]; then
-            echo "Subprojeto frontend encontrado. Iniciando Validação..."
+            echo "Subprojeto frontend encontrado. Iniciando validação..."
             cd app
             pnpm install --frozen-lockfile
             pnpm run build
             docker build -t app-service:test ./app
-          else
+          else 
             echo "Subprojeto app ainda não adicionado ao monorepo."
           fi
 
       - name: 11. Resumo da execução
         run: |
-          echo "Integração Continua concluida com sucesso."
-          echo "Autor da alteração: ${{ github.actor}}"
-          echo "Commit validado: ${{ github.sha}}"
+          echo "Integração Continua concluida com sucesso!"
+          echo "Autor da alteração: ${{ github.actor }}"
+          echo "Commit validado: ${{ github.sha }}"

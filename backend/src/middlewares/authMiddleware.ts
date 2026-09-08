@@ -12,7 +12,7 @@ export function authMiddleware(
 
     // Verifica se o token foi enviado no formato "Bearer <token>"
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ error: 'Token não fornecido.' });
+      return res.status(401).json({ erro: 'Token não fornecido.' });
     }
 
     const token = authHeader.split(' ')[1];
@@ -25,6 +25,6 @@ export function authMiddleware(
 
     return next();
   } catch {
-    return res.status(401).json({ error: 'Token inválido ou expirado.' });
+    return res.status(401).json({ erro: 'Token invalido ou expirado.' });
   }
 }

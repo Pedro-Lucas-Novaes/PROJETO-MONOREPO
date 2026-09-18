@@ -1,13 +1,14 @@
 import "./App.css";
-import { Button } from "./components/button.tsx";
+import { Button } from "./components/Button";
 
 function App() {
   return (
     <>
-      <Button variant="primary">Cadastrar</Button>
+      <Button>Cadastrar</Button>
       <Button variant="secondary">Resetar</Button>
       <Button variant="danger">Deletar</Button>
     </>
   );
 }
+
 export default App;

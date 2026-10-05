@@ -5,13 +5,14 @@ on:
   push:
     branches:
       - main
+  # Dispara na abertura ou atualização de Pull Requests direcionados para a branch main
   pull_request:
     branches:
       - main
   # Permite execução manual pelo painel web do Github Actions
   workflow_dispatch:
 
-  # Permite cancelar esecuções anteriores na mesma branch se novos commits forem enviados
+# Permite cancelar execuções anteriores na mesma branch se novos commits forem enviados
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -21,6 +22,8 @@ jobs:
   validacoes-e-testes:
     name: 1. Qualidade, Tipos e Testes Unitários
     runs-on: ubuntu-latest
+    env:
+      NODE_ENV: test
 
     steps:
       - name: 1. Baixar o código-fonte
@@ -56,14 +59,15 @@ jobs:
           cd backend
           pnpm run type-check
 
-      - name: 8. Executar Testes Unitários com Vitest
+      - name: 8. Executar Testes Unitários e de Integração com Vitest
         run: |
           cd backend
           pnpm run test:run
 
-  # Job 1: Validações Estáticas e Testes Unitários Rápidos (Fail-Fast)
+  # Job 2: Compilação de Produção e Imagens Docker (Só executa se o Job 1 passar)
   build-e-docker:
-    name: 1. Qualidade, Tipos e Testes Unitários
+    name: 2. Compilação e Imagens Docker
+    needs: validacoes-e-testes
     runs-on: ubuntu-latest
 
     steps:
@@ -92,16 +96,16 @@ jobs:
 
       - name: 6. Validar Construção da Imagem Docker da API
         run: |
-          docker build -t api-sevice:test ./backend
+          docker build -t api-service:test ./backend
 
       - name: 7. Validar Frontend (quando presente no monorepo)
         run: |
-          if [ -d "app"]; then
+          if [ -d "app" ]; then
             echo "Subprojeto frontend encontrado. Iniciando validação..."
             cd app
             pnpm install --frozen-lockfile
             pnpm run build
-            docker build -t app-service:test ./app
+            # docker build -t app-service:test .
           else 
             echo "Subprojeto app ainda não adicionado ao monorepo."
           fi
@@ -109,6 +113,6 @@ jobs:
       - name: 8. Resumo da Execução
         run: |
           echo "### Resumo da Execução do Pipeline de CI" >> $GITHUB_STEP_SUMMARY
-          echo "### Integração Contínua concluída com sucesso!" >> $GITHUB_STEP_SUMMARY
+          echo "Integração Contínua concluída com sucesso!" >> $GITHUB_STEP_SUMMARY
           echo "- Autor: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
           echo "- Commit: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY

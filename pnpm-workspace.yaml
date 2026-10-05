@@ -5,5 +5,5 @@ packages:
 allowBuilds:
   sqlite3: true
   esbuild: true
-  node: true
   "@scarf/scarf": false
+  node: set this to true or false

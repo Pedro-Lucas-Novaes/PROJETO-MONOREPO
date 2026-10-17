@@ -1,101 +1,86 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import request from 'supertest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import express, { Request, Response } from 'express';
 import { authMiddleware } from './authMiddleware';
-import { JWT_SECRET } from '../config/auth';
-import { sequelize } from '../config/database';
 
-// Cria um mini-app Express com uma rota protegida apenas para os testes do middleware
-function buildTestApp() {
-  const testApp = express();
-  testApp.use(express.json());
+// Mock do jsonwebtoken
+vi.mock('jsonwebtoken', () => ({
+  default: {
+    sign: vi.fn(),
+    verify: vi.fn(),
+  },
+}));
 
-  testApp.get('/protected', authMiddleware, (req: Request, res: Response) => {
-    res
-      .status(200)
-      .json({ mensagem: 'acesso autorizado', user: (req as any).user });
-  });
+// Helper para criar mocks de req, res e next
+function createMocks() {
+  const req = {
+    headers: {},
+  } as unknown as Request;
 
-  return testApp;
+  const res = {
+    status: vi.fn().mockReturnThis(),
+    json: vi.fn().mockReturnThis(),
+  } as unknown as Response;
+
+  const next = vi.fn() as NextFunction;
+
+  return { req, res, next };
 }
 
-const testApp = buildTestApp();
-
-describe('Testes de Unidade: authMiddleware', () => {
-  beforeAll(async () => {
-    await sequelize.sync({ force: true });
+describe('authMiddleware', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
-  afterAll(async () => {
-    await sequelize.close();
+  it('deve retornar 401 se o header Authorization não estiver presente', () => {
+    const { req, res, next } = createMocks();
+
+    authMiddleware(req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.json).toHaveBeenCalledWith({ erro: 'Token não fornecido.' });
+    expect(next).not.toHaveBeenCalled();
   });
 
-  // 1. Sem cabeçalho Authorization
-  it('deve retornar 401 quando nenhum token for enviado na requisição', async () => {
-    const response = await request(testApp).get('/protected');
+  it('deve retornar 401 se o header Authorization não começar com "Bearer "', () => {
+    const { req, res, next } = createMocks();
+    (req as any).headers.authorization = 'Basic token123';
 
-    expect(response.status).toBe(401);
-    expect(response.body).toHaveProperty('erro');
-    expect(response.body.erro).toBe('Token não fornecido.');
+    authMiddleware(req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.json).toHaveBeenCalledWith({ erro: 'Token não fornecido.' });
+    expect(next).not.toHaveBeenCalled();
   });
 
-  // 2. Cabeçalho presente mas sem o prefixo "Bearer "
-  it('deve retornar 401 quando o token não usar o formato "Bearer <token>"', async () => {
-    const response = await request(testApp)
-      .get('/protected')
-      .set('Authorization', 'TokenSemPrefixo algum-valor');
+  it('deve retornar 401 se o token for inválido ou expirado', () => {
+    const { req, res, next } = createMocks();
+    (req as any).headers.authorization = 'Bearer tokeninvalido';
 
-    expect(response.status).toBe(401);
-    expect(response.body.erro).toBe('Token não fornecido.');
-  });
-
-  // 3. Token com assinatura inválida
-  it('deve retornar 401 quando o token tiver assinatura inválida', async () => {
-    const response = await request(testApp)
-      .get('/protected')
-      .set('Authorization', 'Bearer token.invalido.assinatura');
-
-    expect(response.status).toBe(401);
-    expect(response.body.erro).toBe('Token invalido ou expirado.');
-  });
-
-  // 4. Token expirado
-  it('deve retornar 401 quando o token estiver expirado', async () => {
-    // Gera token que já expirou há 1 segundo
-    const tokenExpirado = jwt.sign(
-      { id: 1, email: 'test@test.com', nome: 'Test' },
-      JWT_SECRET,
-      { expiresIn: -1 }, // expirado imediatamente
-    );
-
-    const response = await request(testApp)
-      .get('/protected')
-      .set('Authorization', `Bearer ${tokenExpirado}`);
-
-    expect(response.status).toBe(401);
-    expect(response.body.erro).toBe('Token invalido ou expirado.');
-  });
-
-  // 5. Token válido — deve passar pelo middleware e chegar ao handler
-  it('deve chamar next() e disponibilizar os dados do usuário em req.user quando o token for válido', async () => {
-    const payload = {
-      id: 42,
-      email: 'valido@fatec.sp.gov.br',
-      nome: 'Usuario Valido',
-    };
-    const tokenValido = jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' });
-
-    const response = await request(testApp)
-      .get('/protected')
-      .set('Authorization', `Bearer ${tokenValido}`);
-
-    expect(response.status).toBe(200);
-    expect(response.body.mensagem).toBe('acesso autorizado');
-    expect(response.body.user).toMatchObject({
-      id: 42,
-      email: 'valido@fatec.sp.gov.br',
-      nome: 'Usuario Valido',
+    vi.mocked(jwt.verify).mockImplementation(() => {
+      throw new Error('jwt malformed');
     });
+
+    authMiddleware(req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.json).toHaveBeenCalledWith({
+      erro: 'Token invalido ou expirado.',
+    });
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('deve chamar next() e salvar o usuário decodificado se o token for válido', () => {
+    const { req, res, next } = createMocks();
+    (req as any).headers.authorization = 'Bearer tokenvalido';
+
+    const decodedUser = { id: 1, email: 'teste@email.com', nome: 'Teste' };
+    vi.mocked(jwt.verify).mockReturnValue(decodedUser as never);
+
+    authMiddleware(req, res, next);
+
+    expect(next).toHaveBeenCalledTimes(1);
+    expect((req as any).user).toEqual(decodedUser);
+    expect(res.status).not.toHaveBeenCalled();
   });
 });

@@ -1,98 +1,135 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import request from 'supertest';
-import bcrypt from 'bcryptjs';
 import { app } from '../app';
-import { sequelize } from '../config/database';
 import { User } from '../models/User';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
-describe('Testes de Integração: AuthController (POST /api/auth/login)', () => {
-  const EMAIL_TESTE = 'auth.teste@fatec.sp.gov.br';
-  const SENHA_TESTE = 'Senha@123';
+// Mock do model User
+vi.mock('../models/User', () => ({
+  User: {
+    findOne: vi.fn(),
+  },
+}));
 
-  beforeAll(async () => {
-    // Recria as tabelas no SQLite em memória
-    await sequelize.sync({ force: true });
+// Mock do bcrypt
+vi.mock('bcryptjs', () => ({
+  default: {
+    compare: vi.fn(),
+    hash: vi.fn(),
+  },
+}));
 
-    // Cria um usuário de teste com a senha já hasheada
-    const senha_hash = await bcrypt.hash(SENHA_TESTE, 10);
-    await User.create({
-      nome: 'Usuario Auth Teste',
-      email: EMAIL_TESTE,
-      senha_hash,
-    });
+// Mock do jsonwebtoken
+vi.mock('jsonwebtoken', () => ({
+  default: {
+    sign: vi.fn(),
+    verify: vi.fn(),
+  },
+}));
+
+describe('AuthController - POST /api/auth/login', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
-  afterAll(async () => {
-    await sequelize.close();
-  });
-
-  beforeEach(async () => {
-    // Não limpa entre testes: o usuário de login deve persistir em toda a suíte
-  });
-
-  // 1. Sucesso — credenciais corretas devem retornar token JWT
-  it('deve retornar status 200 e um token JWT ao fazer login com credenciais válidas', async () => {
-    const response = await request(app).post('/api/auth/login').send({
-      email: EMAIL_TESTE,
-      password: SENHA_TESTE,
-    });
-
-    expect(response.status).toBe(200);
-    expect(response.body).toHaveProperty('token');
-    expect(typeof response.body.token).toBe('string');
-    expect(response.body.mensagem).toBe('Login realizado com sucesso!');
-  });
-
-  // 2. Campos obrigatórios ausentes — sem email e senha
-  it('deve retornar status 400 quando email e senha não forem enviados', async () => {
+  it('deve retornar 400 se email e senha não forem fornecidos', async () => {
     const response = await request(app).post('/api/auth/login').send({});
 
     expect(response.status).toBe(400);
-    expect(response.body).toHaveProperty('erro');
     expect(response.body.erro).toBe('Email e senha são obrigatórios');
   });
 
-  // 3. Email ausente
-  it('deve retornar status 400 quando apenas o email estiver ausente', async () => {
-    const response = await request(app).post('/api/auth/login').send({
-      password: SENHA_TESTE,
-    });
+  it('deve retornar 400 se apenas o email for fornecido', async () => {
+    const response = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'teste@email.com' });
 
     expect(response.status).toBe(400);
-    expect(response.body).toHaveProperty('erro');
+    expect(response.body.erro).toBe('Email e senha são obrigatórios');
   });
 
-  // 4. Senha ausente
-  it('deve retornar status 400 quando apenas a senha estiver ausente', async () => {
-    const response = await request(app).post('/api/auth/login').send({
-      email: EMAIL_TESTE,
-    });
+  it('deve retornar 400 se apenas a senha for fornecida', async () => {
+    const response = await request(app)
+      .post('/api/auth/login')
+      .send({ password: 'senha123' });
 
     expect(response.status).toBe(400);
-    expect(response.body).toHaveProperty('erro');
+    expect(response.body.erro).toBe('Email e senha são obrigatórios');
   });
 
-  // 5. Usuário não encontrado
-  it('deve retornar status 401 quando o e-mail não pertencer a nenhum usuário', async () => {
-    const response = await request(app).post('/api/auth/login').send({
-      email: 'nao.existe@fatec.sp.gov.br',
-      password: SENHA_TESTE,
-    });
+  it('deve retornar 401 se o usuário não for encontrado', async () => {
+    vi.mocked(User.findOne).mockResolvedValue(null);
+
+    const response = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'naoexiste@email.com', password: 'senha123' });
 
     expect(response.status).toBe(401);
-    expect(response.body).toHaveProperty('erro');
     expect(response.body.erro).toBe('Credenciais invalidas.');
   });
 
-  // 6. Senha incorreta — usuário existe, mas a senha não bate
-  it('deve retornar status 401 quando a senha estiver incorreta', async () => {
-    const response = await request(app).post('/api/auth/login').send({
-      email: EMAIL_TESTE,
-      password: 'senha-errada-99',
-    });
+  it('deve retornar 401 se o usuário não tiver senha_hash', async () => {
+    vi.mocked(User.findOne).mockResolvedValue({
+      id: 1,
+      email: 'teste@email.com',
+      nome: 'Teste',
+      senha_hash: null,
+    } as any);
+
+    const response = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'teste@email.com', password: 'senha123' });
 
     expect(response.status).toBe(401);
-    expect(response.body).toHaveProperty('erro');
     expect(response.body.erro).toBe('Credenciais invalidas.');
+  });
+
+  it('deve retornar 401 se a senha estiver incorreta', async () => {
+    vi.mocked(User.findOne).mockResolvedValue({
+      id: 1,
+      email: 'teste@email.com',
+      nome: 'Teste',
+      senha_hash: '$2a$10$hashinvalida',
+    } as any);
+    vi.mocked(bcrypt.compare).mockResolvedValue(false as never);
+
+    const response = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'teste@email.com', password: 'senhaerrada' });
+
+    expect(response.status).toBe(401);
+    expect(response.body.erro).toBe('Credenciais invalidas.');
+  });
+
+  it('deve retornar 200 e token JWT em login bem-sucedido', async () => {
+    const fakeUser = {
+      id: 1,
+      email: 'teste@email.com',
+      nome: 'Teste Silva',
+      senha_hash: '$2a$10$hashvalido',
+    };
+    vi.mocked(User.findOne).mockResolvedValue(fakeUser as any);
+    vi.mocked(bcrypt.compare).mockResolvedValue(true as never);
+    vi.mocked(jwt.sign).mockReturnValue('fake.jwt.token' as never);
+
+    const response = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'teste@email.com', password: 'senha123' });
+
+    expect(response.status).toBe(200);
+    expect(response.body.mensagem).toBe('Login realizado com sucesso!');
+    expect(response.body.token).toBe('fake.jwt.token');
+  });
+
+  it('deve retornar 500 se ocorrer um erro inesperado', async () => {
+    vi.mocked(User.findOne).mockRejectedValue(new Error('Erro de banco'));
+
+    const response = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'teste@email.com', password: 'senha123' });
+
+    expect(response.status).toBe(500);
+    expect(response.body.erro).toBe('Erro de banco');
   });
 });

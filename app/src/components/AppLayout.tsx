@@ -1,18 +1,26 @@
+// src/components/AppLayout.tsx
 import { Outlet, Link } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 
 export function AppLayout() {
   const { user, logout } = useAuth();
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
-      <header className="bg-white border-b px-6 py-4 flex justify-between items-center">
+      <header className="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center">
         <div className="flex items-center gap-6">
-          <span className="font-bold text-slate-800">Sistema web</span>
+          <span className="font-bold text-slate-800">Sistema Web</span>
           <nav className="flex gap-4 text-sm font-medium text-slate-600">
-            <Link to="/dashboard" className="hover:text-blue-600">
+            <Link
+              to="/dashboard"
+              className="hover:text-blue-600 transition-colors"
+            >
               Painel
             </Link>
-            <Link to="/perfil" className="hover:text-blue-600">
+            <Link
+              to="/perfil"
+              className="hover:text-blue-600 transition-colors"
+            >
               Perfil
             </Link>
           </nav>
@@ -30,8 +38,8 @@ export function AppLayout() {
           </button>
         </div>
       </header>
+
       <main className="flex-1 max-w-6xl w-full mx-auto p-6">
-        {/* As rotas filhas serão renderizadas aqui */}
         <Outlet />
       </main>
     </div>

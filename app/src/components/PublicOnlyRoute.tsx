@@ -8,6 +8,7 @@ export function PublicOnlyRoute() {
     return null;
   }
 
+  // Se ja estiver autenticado, redireciona diretamente para o painel
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
   }

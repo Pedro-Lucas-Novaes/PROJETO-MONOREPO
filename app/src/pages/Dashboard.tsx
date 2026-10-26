@@ -1,4 +1,3 @@
-// src/pages/Dashboard.tsx
 import { useAuth } from "../hooks/useAuth";
 import {
   Card,
@@ -7,9 +6,13 @@ import {
   CardDescription,
   CardContent,
 } from "@/components/ui/card";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
 export function Dashboard() {
   const { user } = useAuth();
+  const iniciais = user?.nome ? user.nome.slice(0, 2).toUpperCase() : "US";
 
   return (
     <div className="space-y-6">
@@ -21,28 +24,40 @@ export function Dashboard() {
       </div>
 
       <Card className="max-w-xl shadow-sm">
-        <CardHeader>
-          <CardTitle>Dados do Usuário</CardTitle>
-          <CardDescription>
-            Informações obtidas a partir do perfil do usuário autenticado
-          </CardDescription>
+        <CardHeader className="flex flex-row items-center gap-4">
+          <Avatar className="h-12 w-12">
+            <AvatarFallback className="bg-blue-600 text-white font-bold">
+              {iniciais}
+            </AvatarFallback>
+          </Avatar>
+          <div>
+            <CardTitle>{user?.nome}</CardTitle>
+            <CardDescription>{user?.email}</CardDescription>
+          </div>
         </CardHeader>
-        <CardContent className="space-y-2 text-sm">
-          <p>
-            <strong>Identificador (ID):</strong> #{user?.id}
-          </p>
-          <p>
-            <strong>Nome:</strong> {user?.nome}
-          </p>
-          <p>
-            <strong>E-mail:</strong> {user?.email}
-          </p>
-          <p>
-            <strong>Perfil:</strong>{" "}
-            <span className="inline-block px-2 py-0.5 text-xs font-semibold rounded bg-blue-100 text-blue-800">
-              {user?.perfil || "usuario"}
-            </span>
-          </p>
+
+        <Separator />
+
+        <CardContent className="space-y-3 pt-4 text-sm">
+          <div className="flex justify-between items-center">
+            <span className="text-slate-500">Identificador da Conta:</span>
+            <span className="font-mono font-medium">#{user?.id}</span>
+          </div>
+
+          <div className="flex justify-between items-center">
+            <span className="text-slate-500">Nível de Permissão:</span>
+            <Badge variant="secondary">{user?.perfil || "usuario"}</Badge>
+          </div>
+
+          <div className="flex justify-between items-center">
+            <span className="text-slate-500">Status da Sessão:</span>
+            <Badge
+              variant="outline"
+              className="border-emerald-500 text-emerald-600"
+            >
+              Sessão Ativa
+            </Badge>
+          </div>
         </CardContent>
       </Card>
     </div>
